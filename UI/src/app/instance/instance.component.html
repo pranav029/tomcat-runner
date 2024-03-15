@@ -1,0 +1,23 @@
+<mat-accordion>
+    <mat-expansion-panel (opened)="panelOpenState = true" (closed)="panelOpenState = false">
+        <mat-expansion-panel-header>
+            <mat-panel-title>
+                {{instance.instanceName}}
+            </mat-panel-title>
+            <mat-panel-description>
+                <button mat-icon-button color="accent" aria-label="run" (click)="runTomcat($event)">
+                    <mat-icon svgIcon="run"></mat-icon>
+                </button>
+                <button mat-icon-button color="accent" aria-label="run" (click)="runTomcat($event)">
+                    <mat-icon svgIcon="re-run"></mat-icon>
+                </button>
+                <button mat-icon-button color="warn" aria-label="stop" (click)="stopTomcat($event)">
+                    <mat-icon svgIcon="stop"></mat-icon>
+                </button>
+                <mat-spinner [diameter]="20" color="accent"></mat-spinner>
+            </mat-panel-description>
+        </mat-expansion-panel-header>
+        <button mat-raised-button color="warn" style="width: fit-content;" >Cancel</button>
+        <app-form [save]="onSave"></app-form>
+    </mat-expansion-panel>
+</mat-accordion>

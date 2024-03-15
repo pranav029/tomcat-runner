@@ -1,0 +1,8 @@
+input.tomcat-input::-webkit-outer-spin-button,
+input.tomcat-input::-webkit-inner-spin-button {
+  display: none;
+}
+
+input.tomcat-input {
+  -moz-appearance: textfield;
+}

@@ -1,0 +1,29 @@
+<form [formGroup]="instanceForm" (ngSubmit)="onSave()">
+    <div style="display: flex;flex-direction: column;width: 100%;">
+        <mat-form-field appearance="outline">
+            <mat-label>Instance Name</mat-label>
+            <input matInput placeholder="Enter instance name" formControlName="instanceName">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+            <mat-label>Instance Server Port</mat-label>
+            <input class="tomcat-input" type="number" min="0" onKeyPress="if(this.value.length==4) return false;"
+                matInput placeholder="Enter instance server port" formControlName="serverPort">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+            <mat-label>Instance Admin Port</mat-label>
+            <input class="tomcat-input" type="number" min="0" onKeyPress="if(this.value.length==4) return false;"
+                matInput placeholder="Enter instance admin port" formControlName="adminPort">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+            <mat-label>Instance Context path</mat-label>
+            <input matInput placeholder="Enter instance context path" formControlName="contextPath">
+        </mat-form-field>
+        <div style="display: flex;flex-direction: row;justify-content: end;width: 100%;">
+            <button mat-raised-button color="primary" style="width: fit-content;"
+                [disabled]="!instanceForm.valid">Save</button>
+        </div>
+    </div>
+</form>
