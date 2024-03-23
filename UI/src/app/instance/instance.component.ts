@@ -7,6 +7,7 @@ import { DomSanitizer } from '@angular/platform-browser';
 import { FormComponent } from '../form/form.component';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Instance } from '../model/instance';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-instance',
@@ -17,23 +18,23 @@ import { Instance } from '../model/instance';
     MatIconModule,
     HttpClientModule,
     FormComponent,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    CommonModule
   ],
   templateUrl: './instance.component.html',
   styleUrl: './instance.component.css',
 })
 export class InstanceComponent {
   @Input() vscode?: any
-  instance: Instance
   panelOpenState = false;
-  @Input() cancel?: () => void
-  @Input() inst?: Instance
+  @Input() remove!: (_:number) => void
+  @Input() instance!: Instance
+  @Input() index!: number
   constructor(
     private matIconRegistry: MatIconRegistry,
     private domSanitizer: DomSanitizer
   ) {
     this.registerIcons()
-    this.instance = new Instance();
   }
 
   runTomcat(event: Event) {

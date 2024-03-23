@@ -4,7 +4,10 @@
             <mat-label>Instance Name</mat-label>
             <input matInput placeholder="Enter instance name" formControlName="instanceName">
         </mat-form-field>
-
+        <mat-form-field appearance="outline">
+            <mat-label>Tomcat Home</mat-label>
+            <input matInput placeholder="Enter tomcat home path" formControlName="tomcatHome">
+        </mat-form-field>
         <mat-form-field appearance="outline">
             <mat-label>Instance Server Port</mat-label>
             <input class="tomcat-input" type="number" min="0" onKeyPress="if(this.value.length==4) return false;"

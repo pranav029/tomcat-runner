@@ -1,2 +1,6 @@
-<button mat-raised-button color="primary" style="width: fit-content;" (click)="addInstance()">Add Instance</button>
-<app-instance *ngFor="let instance of instances" [vscode]="vscode" [cancel]="cancel" [inst]="instance"></app-instance>
+<h3>{{msg}}</h3>
+<h3>{{message}}</h3>
+<button *ngIf="!error" mat-raised-button color="primary" style="width: fit-content;" (click)="addInstance()">Add
+    Instance</button>
+<app-instance *ngFor="let instance of instances;let idx = index" [vscode]="vscode" [remove]="remove"
+    [instance]="instance" [index]="idx"></app-instance>

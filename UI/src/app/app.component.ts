@@ -10,6 +10,9 @@ import { InstanceComponent } from './instance/instance.component';
 import { Instance } from './model/instance';
 import { CommonModule } from '@angular/common';
 
+const NO_PROJECT_FOUND = 'no-project-found'
+const PROJECT_LOADING = 'project-loading'
+
 declare function acquireVsCodeApi(): any;
 @Component({
   selector: 'app-root',
@@ -24,12 +27,23 @@ declare function acquireVsCodeApi(): any;
 })
 export class AppComponent implements OnInit {
   vscode?: any
-  instances: Instance[] = [new Instance()]
+  instances: Instance[] = []
+  error: boolean = false
+  msg: String = 'init'
+  message: string = 'message'
 
-  constructor(private changeDetectorRef: ChangeDetectorRef) { }
+  constructor(private changeDetectorRef: ChangeDetectorRef) {
+    this.vscode = acquireVsCodeApi()
+  }
 
   ngOnInit(): void {
-    this.vscode = acquireVsCodeApi()
+    this.initObserver()
+    this.restoreState()
+    this.vscode.postMessage('UI started')
+  }
+  restoreState() {
+    const state = this.vscode.getState() || { message: 'empty state' }
+    this.msg = state.message
   }
 
   addInstance() {
@@ -38,8 +52,43 @@ export class AppComponent implements OnInit {
     this.changeDetectorRef.detectChanges()
   }
 
-  cancel = () => {
-    this.instances = this.instances.slice(0, this.instances.length)
+  remove = (index: number) => {
+    this.instances.splice(index, 1)
+    this.changeDetectorRef.detectChanges()
+  }
+
+  initObserver() {
+    window.addEventListener('message', event => {
+      this.vscode.postMessage({ action: 'test', instance: event.data.type })
+      event.stopPropagation()
+      switch (event.data.type) {
+        case 'update-instance':
+          this.msg = ''
+          this.updateInstance(event.data.data)
+          return
+        case 'project-loaded':
+          this.instances.push(event.data.data)
+          this.msg = this.instances.length > 0 ? '' : 'No Projects.'
+          return
+        case 'no-project-found':
+          this.msg = event.data.data || 'no data found'
+          this.message = 'no-project-found'
+          this.vscode.setState({ message: event.data.data })
+          acquireVsCodeApi().postMessage({ action: 'test', instance: 'Test instance' })
+          this.changeDetectorRef.detectChanges()
+          return
+      }
+    })
+  }
+
+  updateInstance(instance: Instance) {
+    this.instances?.forEach(inst => {
+      if (instance.instanceName === inst.instanceName) {
+        inst.running = instance.running
+        inst.processing = instance.processing
+      }
+    })
+    this.instances.push(instance)
     this.changeDetectorRef.detectChanges()
   }
 }

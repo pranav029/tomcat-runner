@@ -1,8 +1,9 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import { WebProvider } from './webProvider';
-import { TomcatConfig, TomcatRunner, getConfig } from './app';
+import { WebProvider } from './ui/webProvider';
+import { TomcatRunnerService } from './tomcat/tomcat.runner.service';
+import { TomcatConfig } from './tomcat/tomcat.config';
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -20,27 +21,11 @@ export function activate(context: vscode.ExtensionContext) {
 		// Display a message box to the user
 		vscode.window.showInformationMessage('Hello World from FirstExt!');
 	});
-	const tomcatConfig: TomcatConfig = getConfig()
-	const tomcatRunner: TomcatRunner = new TomcatRunner(tomcatConfig)
-	let runner = vscode.commands.registerCommand('tomcat.run', () => tomcatRunner.run())
-	const provider = new WebProvider(context.extensionUri,
-		(tomcatConfig: TomcatConfig): TomcatRunner => {
-			tomcatConfig = prepareContext(tomcatConfig)
-			console.log(tomcatConfig)
-			return new TomcatRunner(tomcatConfig)
-		});
+	const provider = new WebProvider(context.extensionUri);
 	const pdispo = vscode.window.registerWebviewViewProvider('customwebprovider', provider)
 	context.subscriptions.push(disposable)
 	context.subscriptions.push(pdispo)
-	context.subscriptions.push(runner)
 }
-function prepareContext(tomcatConfig: TomcatConfig): TomcatConfig {
-	if (tomcatConfig.contextPath === '/')
-		tomcatConfig.contextPath = 'root'
-	tomcatConfig.contextPath = tomcatConfig.contextPath.replace('/', '#')
-	tomcatConfig.workingDir = 'C:/cgiTraining/JpaWebApp'
-	tomcatConfig.projectName = 'JpaWebApp'
-	return tomcatConfig
-}
+
 // This method is called when your extension is deactivated
 export function deactivate() { }

@@ -20,11 +20,10 @@ import { Instance } from '../model/instance';
 })
 export class FormComponent implements OnInit {
   instanceForm!: FormGroup
-  instance: Instance
+  @Input() instance!: Instance
   @Input() save?: ((instance: Instance) => void)
-  constructor(private formBuilder: FormBuilder) {
-    this.instance = new Instance()
-  }
+  constructor(private formBuilder: FormBuilder) { }
+
   ngOnInit(): void {
     this.initForm()
   }
@@ -35,6 +34,7 @@ export class FormComponent implements OnInit {
 
   private initForm() {
     this.instanceForm = this.formBuilder.group({
+      tomcatHome:[this.instance.tomcatHome, Validators.required],
       instanceName: [this.instance.instanceName, Validators.required],
       serverPort: [this.instance.serverPort, Validators.compose([Validators.required, Validators.minLength(4), Validators.maxLength(4)])],
       adminPort: [this.instance.adminPort, Validators.compose([Validators.required, Validators.minLength(4), Validators.maxLength(4)])],
