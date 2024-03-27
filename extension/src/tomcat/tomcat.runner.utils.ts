@@ -3,10 +3,11 @@ import { homedir } from "os"
 import { TomcatConfig } from "./tomcat.config"
 import * as fs from "fs";
 import * as xml2js from "xml2js"
-import { TOMCAT_RUNNER_DIR, DEPENDENCY_FILE_NAME } from "./constants";
+import { DEPENDENCY_FILE_NAME } from "./constants";
 import { Uri } from "vscode";
-import { map } from "rxjs";
-import { resolve } from "path";
+import { join } from "path";
+import { JavaHomeNotFoundException } from "./exceptions";
+
 
 export abstract class TomcatRunnerUtils {
     public static copyDir(sourceDir: string, destDir: string): Promise<boolean> {
@@ -55,6 +56,7 @@ export abstract class TomcatRunnerUtils {
         return `${file}-${ver}.${ext}`
     }
     public static getDependencyFilePath(tomcatConfig: TomcatConfig): string {
+        const TOMCAT_RUNNER_DIR = join(homedir.toString(), '.tomcatRunner')
         return `${TOMCAT_RUNNER_DIR}/${tomcatConfig.projectName}/${tomcatConfig.instanceName}/${DEPENDENCY_FILE_NAME}`
     }
     public static generateDependencyFile(tomcatConfig: TomcatConfig): Promise<boolean> {
@@ -118,9 +120,11 @@ export abstract class TomcatRunnerUtils {
     private static getBaseCommand(tomcatConfig: TomcatConfig): string[] {
         const CATALINA_BASE = TomcatRunnerUtils.getDestDir(tomcatConfig)
         const command = []
-        //Read JAVA_HOME from env
-        const JH = process.env.JAVA_HOME
-        command.push('"C:/Program Files/Java/jdk-17/bin/java.exe"')
+        const javaHome = process.env.JAVA_HOME
+        if (!javaHome)
+            throw new JavaHomeNotFoundException('JAVA_HOME not exits')
+        const javaPath = join(javaHome, 'bin', 'java.exe')
+        command.push(javaPath)
         command.push(`-Dcatalina.home=${tomcatConfig.tomcatHome}`)
         command.push(`-Dcatalina.base=${CATALINA_BASE}`)
         command.push(`-Djava.io.tmpdir=${CATALINA_BASE}/temp`)

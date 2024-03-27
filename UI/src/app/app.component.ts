@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, importProvidersFrom } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, importProvidersFrom } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatExpansionModule } from '@angular/material/expansion';
@@ -25,7 +25,7 @@ declare function acquireVsCodeApi(): any;
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   vscode?: any
   instances: Instance[] = []
   error: boolean = false
@@ -34,6 +34,11 @@ export class AppComponent implements OnInit {
 
   constructor(private changeDetectorRef: ChangeDetectorRef) {
     this.vscode = acquireVsCodeApi()
+  }
+  ngOnDestroy(): void {
+    this.vscode.postMessage({ action: 'on-destroy' })
+    this.restoreState()
+    this.vscode.postMessage('UI destoryed')
   }
 
   ngOnInit(): void {
@@ -74,7 +79,7 @@ export class AppComponent implements OnInit {
           this.msg = event.data.data || 'no data found'
           this.message = 'no-project-found'
           this.vscode.setState({ message: event.data.data })
-          acquireVsCodeApi().postMessage({ action: 'test', instance: 'Test instance' })
+          this.vscode.postMessage({ action: 'test', instance: 'Test instance' })
           this.changeDetectorRef.detectChanges()
           return
       }

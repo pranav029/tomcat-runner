@@ -1,6 +1,8 @@
 import { Webview, WebviewView } from "vscode";
 import { Instance, TomcatConfig } from "../tomcat/tomcat.config";
-import { Subject, Observable } from "rxjs"
+import { Subject, Observable, BehaviorSubject, Subscription, filter } from "rxjs"
+import { subscribe } from "diagnostics_channel";
+import { ViewMountListener } from "../tomcat/view.mount.listener";
 
 const PROJECT_LOADING = 'project-loading'
 const UPDATE_INSTANCE = 'update-instance'
@@ -9,26 +11,67 @@ const PROJECT_LOADED = 'project-loaded'
 const NO_PROJECT_FOUND = 'no-project-found'
 const NO_PROJECT_FOUND_MESSAGE = 'No project found in the workspace'
 
-export class EventHandler {
-    constructor(private webview: Webview) { }
+
+export class EventHandler implements ViewMountListener {
+    private uiEvents: BehaviorSubject<any>;
+    private backendEvents: BehaviorSubject<any>;
+    private backendEventSubscription?: Subscription
+    private webview?: Webview | null = null
+
+    constructor() {
+        this.uiEvents = new BehaviorSubject(null)
+        this.backendEvents = new BehaviorSubject(null)
+    }
+    onViewDestroy(): void {
+        console.log('View destroyed')
+        this.webview = null
+        this.backendEventSubscription?.unsubscribe()
+    }
+
+    onViewMount(webview: Webview): void {
+        console.log('Webview mount event')
+        this.webview = webview
+        this.backendEventSubscription?.unsubscribe()
+        this.observeBackendEvents()
+        this.observeUiEvents()
+    }
+
     observe(send: (event: any) => void) {
-        this.webview.onDidReceiveMessage(send)
+        this.uiEvents.asObservable().pipe(
+            filter(event => event != null),
+        ).subscribe(send)
     }
 
     loadingProject() {
-        this.webview.postMessage({ type: PROJECT_LOADING })
+        this.backendEvents.next({ type: PROJECT_LOADING })
     }
 
     projectLoaded(instances: Instance[]) {
-        this.webview.postMessage({ type: PROJECT_LOADED, data: instances })
+        this.backendEvents.next({ type: PROJECT_LOADED, data: instances })
     }
 
     noProjectFound(message: String) {
-        console.log('sending ' + message)
-        this.webview.postMessage({ type: NO_PROJECT_FOUND, data: message })
+        this.backendEvents.next({ type: NO_PROJECT_FOUND, data: message })
     }
 
     updateInstance(instance: Instance) {
-        this.webview.postMessage({ type: UPDATE_INSTANCE, data: instance })
+        this.backendEvents.next({ type: UPDATE_INSTANCE, data: instance })
+    }
+
+    private observeBackendEvents() {
+        if (!this.webview) return
+        this.backendEventSubscription = this.backendEvents.asObservable()
+            .pipe(
+                filter(event => event != null)
+            )
+            .subscribe((event: any) => {
+                this.webview?.postMessage(event)
+            })
+    }
+
+    private observeUiEvents() {
+        this.webview?.onDidReceiveMessage(event => {
+            this.uiEvents.next(event)
+        })
     }
 }

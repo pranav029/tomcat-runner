@@ -1,5 +1,7 @@
+import { Webview } from "vscode";
 import { EventHandler } from "../ui/event.handler";
 
 export interface ViewMountListener {
-    onViewMount(eventHandler: EventHandler): void
+    onViewMount(webview: Webview): void
+    onViewDestroy(): void
 }

@@ -6,26 +6,26 @@ import { EventHandler } from "../ui/event.handler";
 import { ConfigManager } from "./config.manager";
 import { ProcessManager } from "./process.manager";
 import { ViewMountListener } from "./view.mount.listener";
+import * as os from "os"
 
 
 
 
-export class TomcatRunnerService implements ViewMountListener {
+export class TomcatRunnerService {
     logger!: OutputChannel
     private workspaceDir?: vscode.WorkspaceFolder
     private configManager?: ConfigManager
     private processManager?: ProcessManager
-    private eventHandler?: EventHandler
-    private isNotFirstTimeLoad: boolean = false
+    private eventHandler: EventHandler
 
-    onViewMount(eventHandler: EventHandler): void {
-        this.eventHandler = eventHandler
+    constructor() {
+        console.log(process.env.JAVA_HOME)
+        console.log(os.type())
+        this.eventHandler = new EventHandler()
         this.initObservers()
-        if (this.isNotFirstTimeLoad) return
         this.eventHandler?.loadingProject()
         this.workspaceDir = vscode.workspace.workspaceFolders?.at(0)
         this.verifyProject()
-        this.isNotFirstTimeLoad = true
     }
 
     private verifyProject() {
@@ -39,10 +39,9 @@ export class TomcatRunnerService implements ViewMountListener {
                 this.configManager = new ConfigManager(this.onConfigReady, this.workspaceDir?.uri.path.slice(1))
             this.processManager = new ProcessManager()
             this.readProjectConfig()
-            this.initObservers()
         } else {
             console.log('Not a maven project')
-            this.eventHandler?.noProjectFound('Not a Maven Project')
+            this.eventHandler?.noProjectFound('Not a Maven Project HEHE')
         }
     }
 
@@ -99,7 +98,6 @@ export class TomcatRunnerService implements ViewMountListener {
 
     private initObservers() {
         this.eventHandler?.observe(event => {
-            console.log(event)
             switch (event.action) {
                 case 'run':
                     console.log('Run event')
@@ -118,6 +116,10 @@ export class TomcatRunnerService implements ViewMountListener {
                     return
             }
         })
+    }
+
+    protected getViewMountListener(): ViewMountListener {
+        return this.eventHandler
     }
 }
 

@@ -1,4 +1,4 @@
-import { DEPENDENCY_FILE_NAME, TOMCAT_CONF_DIR } from "./constants";
+import { DEPENDENCY_FILE_NAME } from "./constants";
 import { TomcatConfig } from "./tomcat.config";
 import { TomcatRunnerUtils } from "./tomcat.runner.utils";
 import * as fs from "fs";
