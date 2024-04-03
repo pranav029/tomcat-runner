@@ -3,13 +3,15 @@ import { Instance, TomcatConfig } from "../tomcat/tomcat.config";
 import { Subject, Observable, BehaviorSubject, Subscription, filter } from "rxjs"
 import { subscribe } from "diagnostics_channel";
 import { ViewMountListener } from "../tomcat/view.mount.listener";
+import { ProjectState } from "./resource";
 
-const PROJECT_LOADING = 'project-loading'
+const PROJECT_LOADING = 'loading-project'
 const UPDATE_INSTANCE = 'update-instance'
 const INSTANCES = 'instances'
 const PROJECT_LOADED = 'project-loaded'
-const NO_PROJECT_FOUND = 'no-project-found'
+const PROJECT_ERROR = 'project-error'
 const NO_PROJECT_FOUND_MESSAGE = 'No project found in the workspace'
+const UI_STATE_UPDATE = 'ui-state-update'
 
 
 export class EventHandler implements ViewMountListener {
@@ -50,11 +52,16 @@ export class EventHandler implements ViewMountListener {
         this.backendEvents.next({ type: PROJECT_LOADED, data: instances })
     }
 
-    noProjectFound(message: String) {
-        this.backendEvents.next({ type: NO_PROJECT_FOUND, data: message })
+    updateUiState(projectState: ProjectState) {
+        this.backendEvents.next({ type: UI_STATE_UPDATE, data: projectState })
+    }
+
+    error(message: String) {
+        this.backendEvents.next({ type: PROJECT_ERROR, data: message })
     }
 
     updateInstance(instance: Instance) {
+        console.log('Updating..... \n', instance)
         this.backendEvents.next({ type: UPDATE_INSTANCE, data: instance })
     }
 

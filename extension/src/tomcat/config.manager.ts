@@ -1,15 +1,27 @@
-import { DEPENDENCY_FILE_NAME } from "./constants";
-import { TomcatConfig } from "./tomcat.config";
+import { EventHandler } from "../ui/event.handler";
+import { Constants } from "./constants";
+import { Instance, TomcatConfig } from "./tomcat.config";
 import { TomcatRunnerUtils } from "./tomcat.runner.utils";
 import * as fs from "fs";
 import * as xml2js from "xml2js"
 
+type ProjectConfig = {
+    projectName: string,
+    projectType: string,
+    instances: TomcatConfig[]
+}
 
 export class ConfigManager {
+    private projectConfig?: ProjectConfig
     constructor(
         private onConfigReady: (_: TomcatConfig) => void,
+        private onProjectConfigReady: (_: boolean, __?: string) => void,
+        private onSave: (__: boolean, _: TomcatConfig) => void,
+        private onDelete: (_: boolean, __: TomcatConfig) => void,
         private workspaceDir: string
-    ) { }
+    ) {
+        this.readConfig()
+    }
 
     setupConfig(tomcatConfig: TomcatConfig) {
         console.log(tomcatConfig.workingDir)
@@ -97,7 +109,7 @@ export class ConfigManager {
     }
 
     private findDependencies(dir: string, callback: (data: string[]) => void) {
-        fs.readFile(`${dir}/${DEPENDENCY_FILE_NAME}`, 'utf8', (err, data) => {
+        fs.readFile(`${dir}/${Constants.DEPENDENCY_FILE_NAME}`, 'utf8', (err, data) => {
             const processedData = data
                 .split('\n')
                 .filter(line => line.trim().length != 0)
@@ -107,5 +119,63 @@ export class ConfigManager {
                 .map(line => line.split(':runtime')[0])
             callback(processedData)
         })
+    }
+
+    save(tomcatConfig: TomcatConfig) {
+        tomcatConfig.workingDir = this.workspaceDir
+        console.log('attempting save')
+        const alreadyExist = this.projectConfig?.instances.find(inst => inst.instanceName === tomcatConfig.instanceName)
+        if (alreadyExist) {
+            if (this.projectConfig?.instances)
+                this.projectConfig.instances = this.projectConfig.instances
+                    .map(inst => {
+                        if (inst.instanceName === tomcatConfig.instanceName)
+                            return Instance.from(tomcatConfig)
+                        return inst
+                    })
+        } else {
+            if (!this.projectConfig)
+                this.projectConfig = {
+                    projectName: tomcatConfig.projectName,
+                    projectType: 'maven',
+                    instances: []
+                }
+            this.projectConfig?.instances.push(Instance.from(tomcatConfig))
+        }
+        console.log('config status', this.projectConfig)
+        this.writeConfig((err) => {
+            if (err)
+                console.log(err.message)
+            this.onSave(err == null, tomcatConfig)
+        })
+    }
+
+    delete(tomcatConfig: TomcatConfig) {
+
+    }
+
+    private writeConfig(onSuccess: (err: any) => void) {
+        if (this.projectConfig) {
+            const writeData = JSON.stringify(this.projectConfig)
+            fs.writeFile(TomcatRunnerUtils.getConfigPath(this.projectConfig.projectName), writeData, onSuccess)
+        }
+    }
+
+    private readConfig() {
+        if (TomcatRunnerUtils.projectConfigExists(this.workspaceDir))
+            fs.readFile(TomcatRunnerUtils.getConfigPath(this.workspaceDir), (err, data) => {
+                if (err) {
+                    this.onProjectConfigReady(true, Constants.SOMETHING_WENT_WRONG)
+                    return
+                }
+                this.projectConfig = JSON.parse(data.toString())
+                this.onProjectConfigReady(false)
+            })
+        else this.onProjectConfigReady(true, Constants.NO_CONFIG_FOUND)
+
+    }
+
+    getInstances(): TomcatConfig[] {
+        return this.projectConfig?.instances || []
     }
 }

@@ -15,7 +15,7 @@ export class WebProvider extends TomcatRunnerService implements WebviewViewProvi
                 this._vscodeUri
             ]
         }
-
+        webviewView
         webviewView.onDidDispose(this.getViewMountListener().onViewDestroy)
         const workingDir = Uri.joinPath(this._vscodeUri, 'dist', 'ui', 'browser')
         const indexFile = fs.readFileSync(Uri.joinPath(workingDir, 'index.html').path.slice(1)).toString()

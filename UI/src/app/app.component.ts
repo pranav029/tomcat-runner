@@ -1,17 +1,12 @@
-import { ChangeDetectorRef, Component, OnDestroy, OnInit, importProvidersFrom } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { MatButtonModule } from '@angular/material/button';
-import { MatExpansionModule } from '@angular/material/expansion';
-import { MatIconModule } from '@angular/material/icon';
-import { HttpClient, HttpClientModule } from "@angular/common/http";
-import { MatIconRegistry } from "@angular/material/icon";
-import { DomSanitizer } from "@angular/platform-browser";
 import { InstanceComponent } from './instance/instance.component';
 import { Instance } from './model/instance';
 import { CommonModule } from '@angular/common';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { Constants } from './constants/constants';
 
-const NO_PROJECT_FOUND = 'no-project-found'
-const PROJECT_LOADING = 'project-loading'
+
 
 declare function acquireVsCodeApi(): any;
 @Component({
@@ -20,7 +15,8 @@ declare function acquireVsCodeApi(): any;
   imports: [
     RouterOutlet,
     InstanceComponent,
-    CommonModule
+    CommonModule,
+    MatProgressSpinnerModule
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
@@ -31,6 +27,7 @@ export class AppComponent implements OnInit, OnDestroy {
   error: boolean = false
   msg: String = 'init'
   message: string = 'message'
+  loading: boolean = false
 
   constructor(private changeDetectorRef: ChangeDetectorRef) {
     this.vscode = acquireVsCodeApi()
@@ -46,9 +43,10 @@ export class AppComponent implements OnInit, OnDestroy {
     this.restoreState()
     this.vscode.postMessage('UI started')
   }
+
   restoreState() {
-    const state = this.vscode.getState() || { message: 'empty state' }
-    this.msg = state.message
+    this.instances = this.vscode.getState()?.instances || []
+    this.loading = this.vscode.getState()?.loading || false
   }
 
   addInstance() {
@@ -64,25 +62,40 @@ export class AppComponent implements OnInit, OnDestroy {
 
   initObserver() {
     window.addEventListener('message', event => {
-      this.vscode.postMessage({ action: 'test', instance: event.data.type })
       event.stopPropagation()
       switch (event.data.type) {
-        case 'update-instance':
-          this.msg = ''
+        case Constants.UPDATE_INSTANCE:
+          this.loading = false
           this.updateInstance(event.data.data)
+          this.updateState()
+          this.changeDetectorRef.detectChanges()
           return
-        case 'project-loaded':
-          this.instances.push(event.data.data)
-          this.msg = this.instances.length > 0 ? '' : 'No Projects.'
+        case Constants.PROJECT_LOADED:
+          this.loadData(event.data.data)
+          this.loading = false
+          this.updateState()
+          this.changeDetectorRef.detectChanges()
           return
-        case 'no-project-found':
-          this.msg = event.data.data || 'no data found'
-          this.message = 'no-project-found'
-          this.vscode.setState({ message: event.data.data })
-          this.vscode.postMessage({ action: 'test', instance: 'Test instance' })
+        case Constants.PROJECT_ERROR:
+          this.loading = false
+          this.updateState()
+          this.changeDetectorRef.detectChanges()
+          return
+        case Constants.PROJECT_LOADING:
+          this.loading = true
+          this.updateState()
           this.changeDetectorRef.detectChanges()
           return
       }
+    })
+  }
+
+  private loadData(instances: Instance[]) {
+    const obj: Instance[] = { ...instances }
+    this.instances = obj.map(instance => {
+      instance
+      instance.isSaved = true
+      return instance
     })
   }
 
@@ -91,9 +104,30 @@ export class AppComponent implements OnInit, OnDestroy {
       if (instance.instanceName === inst.instanceName) {
         inst.running = instance.running
         inst.processing = instance.processing
+        inst.isSaved = true
       }
     })
-    this.instances.push(instance)
+    this.updateState()
     this.changeDetectorRef.detectChanges()
   }
+
+  private updateState() {
+    this.vscode.setState({
+      loading: this.loading,
+      message: this.msg,
+      instances: this.instances
+    })
+  }
+
+  isInvalidName = (name: string): boolean => {
+    return this.instances.find(inst => inst.instanceName === name) != undefined
+  }
+}
+
+class ProjectState {
+  projectName!: string
+  projectType!: string
+  error!: boolean
+  errorMsg!: string
+  instances: Instance[] = []
 }

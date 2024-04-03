@@ -3,7 +3,7 @@ import { homedir } from "os"
 import { TomcatConfig } from "./tomcat.config"
 import * as fs from "fs";
 import * as xml2js from "xml2js"
-import { DEPENDENCY_FILE_NAME } from "./constants";
+import { Constants } from "./constants";
 import { Uri } from "vscode";
 import { join } from "path";
 import { JavaHomeNotFoundException } from "./exceptions";
@@ -56,13 +56,19 @@ export abstract class TomcatRunnerUtils {
         return `${file}-${ver}.${ext}`
     }
     public static getDependencyFilePath(tomcatConfig: TomcatConfig): string {
-        const TOMCAT_RUNNER_DIR = join(homedir.toString(), '.tomcatRunner')
-        return `${TOMCAT_RUNNER_DIR}/${tomcatConfig.projectName}/${tomcatConfig.instanceName}/${DEPENDENCY_FILE_NAME}`
+        return join(
+            homedir(),
+            '.tomcatRunner',
+            tomcatConfig.projectName,
+            tomcatConfig.instanceName,
+            Constants.DEPENDENCY_FILE_NAME
+        )
     }
     public static generateDependencyFile(tomcatConfig: TomcatConfig): Promise<boolean> {
         return new Promise<boolean>((resolve, _reject) => {
             const command = `cd ${tomcatConfig.workingDir} && mvn dependency:list -DoutputFile=${this.getDependencyFilePath(tomcatConfig)}`
             exec(command, err => {
+                console.log(err?.message)
                 console.log(`Dependency generation ${err == null ? 'success' : 'failed'}`)
                 resolve(err == null)
             })
@@ -117,14 +123,16 @@ export abstract class TomcatRunnerUtils {
         })
     }
 
-    private static getBaseCommand(tomcatConfig: TomcatConfig): string[] {
+    private static getBaseCommand(tomcatConfig: TomcatConfig, debug?: boolean): string[] {
         const CATALINA_BASE = TomcatRunnerUtils.getDestDir(tomcatConfig)
         const command = []
         const javaHome = process.env.JAVA_HOME
         if (!javaHome)
             throw new JavaHomeNotFoundException('JAVA_HOME not exits')
-        const javaPath = join(javaHome, 'bin', 'java.exe')
-        command.push(javaPath)
+        const javaPath = join(javaHome.replace(/\\/g, '/'), 'bin', 'java.exe')
+        command.push(`"${javaPath}"`)
+        if (debug)
+            command.push(`-agentlib:jdwp=transport=dt_socket,address=8090,suspend=y,server=y`)
         command.push(`-Dcatalina.home=${tomcatConfig.tomcatHome}`)
         command.push(`-Dcatalina.base=${CATALINA_BASE}`)
         command.push(`-Djava.io.tmpdir=${CATALINA_BASE}/temp`)
@@ -136,8 +144,8 @@ export abstract class TomcatRunnerUtils {
         command.push(`org.apache.catalina.startup.Bootstrap`)
         return command
     }
-    public static getStartCommand(tomcatConfig: TomcatConfig): string {
-        const command = this.getBaseCommand(tomcatConfig)
+    public static getStartCommand(tomcatConfig: TomcatConfig,debug?:boolean): string {
+        const command = this.getBaseCommand(tomcatConfig,debug)
         command.push('start')
         return command.join(' ')
     }
@@ -147,4 +155,13 @@ export abstract class TomcatRunnerUtils {
         command.push('stop')
         return command.join(' ')
     }
+
+    public static projectConfigExists(projectName: string): boolean {
+        return fs.existsSync(this.getConfigPath(projectName))
+    }
+
+    public static getConfigPath(projectName: string): string {
+        return join(homedir(), '.tomcatRunner', projectName, Constants.PROJECT_METADATA_FILE)
+    }
+
 }

@@ -5,8 +5,8 @@
                 {{instance.instanceName}}
             </mat-panel-title>
             <mat-panel-description>
-                <button *ngIf="!instance.processing && !instance.running" mat-icon-button color="accent"
-                    aria-label="run" (click)="runTomcat($event)">
+                <button *ngIf="!instance.processing && !instance.running && instance.isSaved" mat-icon-button
+                    color="accent" aria-label="run" (click)="runTomcat($event)">
                     <mat-icon svgIcon="run"></mat-icon>
                 </button>
                 <button *ngIf="!instance.processing && instance.running" mat-icon-button color="accent"
@@ -21,6 +21,6 @@
             </mat-panel-description>
         </mat-expansion-panel-header>
         <button mat-raised-button color="warn" style="width: fit-content;" (click)="remove(index)">Delete</button>
-        <app-form [save]="onSave" [instance]="instance"></app-form>
+        <app-form [save]="onSave" [instance]="instance" [isInvalidName]="isInValidName" [vscode]="vscode"></app-form>
     </mat-expansion-panel>
 </mat-accordion>
