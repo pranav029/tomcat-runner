@@ -4,6 +4,7 @@ import { Instance, TomcatConfig } from "./tomcat.config";
 import { TomcatRunnerUtils } from "./tomcat.runner.utils";
 import * as fs from "fs";
 import * as xml2js from "xml2js"
+import * as vscode from 'vscode';
 
 type ProjectConfig = {
     projectName: string,
@@ -12,9 +13,9 @@ type ProjectConfig = {
 }
 
 export class ConfigManager {
-    private projectConfig?: ProjectConfig
+    private _projectConfig?: ProjectConfig
     constructor(
-        private onConfigReady: (_: TomcatConfig) => void,
+        private onConfigReady: (_: boolean, __: TomcatConfig) => void,
         private onProjectConfigReady: (_: boolean, __?: string) => void,
         private onSave: (__: boolean, _: TomcatConfig) => void,
         private onDelete: (_: boolean, __: TomcatConfig) => void,
@@ -31,9 +32,11 @@ export class ConfigManager {
             TomcatRunnerUtils.generateDependencyFile(tomcatConfig)
         ]).then((res) => {
             const [copySuccess, compileSuccess, generationSuccess] = res
-            if (!copySuccess) return
-            if (!compileSuccess) return
-            if (!generationSuccess) return
+            if (!copySuccess || !compileSuccess || !generationSuccess) {
+                vscode.window.showErrorMessage("Some error occured")
+                this.onConfigReady(false, tomcatConfig)
+                return
+            }
             this.editConfigs(tomcatConfig)
         })
     }
@@ -44,9 +47,12 @@ export class ConfigManager {
             this.generateCatalinaConfig(tomcatConfig)
         ]).then(res => {
             const [confEditSuccess, contextWriteSuccess] = res
-            if (!confEditSuccess) return
-            if (!contextWriteSuccess) return
-            this.onConfigReady(tomcatConfig)
+            if (!confEditSuccess || !contextWriteSuccess) {
+                vscode.window.showErrorMessage("Some error occured")
+                this.onConfigReady(false, tomcatConfig)
+                return
+            }
+            this.onConfigReady(true, tomcatConfig)
         })
     }
 
@@ -60,8 +66,10 @@ export class ConfigManager {
                     TomcatRunnerUtils.deleteCatalinaConfig(tomcatConfig)
                 TomcatRunnerUtils.createLocalhostFolder(tomcatConfig)
                 fs.writeFile(TomcatRunnerUtils.getContextOutputPath(tomcatConfig), xmlObj, (err) => {
-                    if (err != null)
+                    if (err != null) {
                         console.log('Context file write Failure ' + err.message)
+                        vscode.window.showErrorMessage("Some error occured")
+                    }
                     else {
                         console.log('Context file wirte Success')
                         resolve(err == null)
@@ -124,28 +132,29 @@ export class ConfigManager {
     save(tomcatConfig: TomcatConfig) {
         tomcatConfig.workingDir = this.workspaceDir
         console.log('attempting save')
-        const alreadyExist = this.projectConfig?.instances.find(inst => inst.instanceName === tomcatConfig.instanceName)
+        const alreadyExist = this._projectConfig?.instances.find(inst => inst.instanceId === tomcatConfig.instanceId)
         if (alreadyExist) {
-            if (this.projectConfig?.instances)
-                this.projectConfig.instances = this.projectConfig.instances
+            if (this._projectConfig?.instances)
+                this._projectConfig.instances = this._projectConfig.instances
                     .map(inst => {
-                        if (inst.instanceName === tomcatConfig.instanceName)
+                        if (inst.instanceId === tomcatConfig.instanceId)
                             return Instance.from(tomcatConfig)
                         return inst
                     })
         } else {
-            if (!this.projectConfig)
-                this.projectConfig = {
+            if (!this._projectConfig)
+                this._projectConfig = {
                     projectName: tomcatConfig.projectName,
                     projectType: 'maven',
                     instances: []
                 }
-            this.projectConfig?.instances.push(Instance.from(tomcatConfig))
+            this._projectConfig?.instances.push(Instance.from(tomcatConfig))
         }
-        console.log('config status', this.projectConfig)
+        console.log('config status', this._projectConfig)
         this.writeConfig((err) => {
             if (err)
                 console.log(err.message)
+            this.readConfig()
             this.onSave(err == null, tomcatConfig)
         })
     }
@@ -155,27 +164,31 @@ export class ConfigManager {
     }
 
     private writeConfig(onSuccess: (err: any) => void) {
-        if (this.projectConfig) {
-            const writeData = JSON.stringify(this.projectConfig)
-            fs.writeFile(TomcatRunnerUtils.getConfigPath(this.projectConfig.projectName), writeData, onSuccess)
+        if (this._projectConfig) {
+            const writeData = JSON.stringify(this._projectConfig)
+            fs.writeFile(TomcatRunnerUtils.getConfigPath(this._projectConfig.projectName), writeData, onSuccess)
         }
     }
 
     private readConfig() {
-        if (TomcatRunnerUtils.projectConfigExists(this.workspaceDir))
-            fs.readFile(TomcatRunnerUtils.getConfigPath(this.workspaceDir), (err, data) => {
+        const workingFolder = this.workspaceDir.split('/').slice(-1)[0]
+        if (TomcatRunnerUtils.projectConfigExists(workingFolder))
+            fs.readFile(TomcatRunnerUtils.getConfigPath(workingFolder), (err, data) => {
                 if (err) {
                     this.onProjectConfigReady(true, Constants.SOMETHING_WENT_WRONG)
                     return
                 }
-                this.projectConfig = JSON.parse(data.toString())
+                console.log('project read success')
+                this._projectConfig = JSON.parse(data.toString())
                 this.onProjectConfigReady(false)
             })
-        else this.onProjectConfigReady(true, Constants.NO_CONFIG_FOUND)
-
+        else {
+            this.onProjectConfigReady(true, Constants.NO_CONFIG_FOUND)
+            vscode.window.showInformationMessage("No configuration found for Tomcat")
+        }
     }
 
     getInstances(): TomcatConfig[] {
-        return this.projectConfig?.instances || []
+        return this._projectConfig?.instances || []
     }
 }

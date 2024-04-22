@@ -14,6 +14,7 @@ export abstract class TomcatRunnerUtils {
         return new Promise<boolean>((resolve, reject) => {
             fs.cp(sourceDir, destDir, { recursive: true }, err => {
                 if (err) {
+                    console.log(err)
                     console.log('Config File copy failed')
                     resolve(false)
                 } else {

@@ -6,7 +6,7 @@ import { MatIconModule, MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
 import { FormComponent } from '../form/form.component';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Instance } from '../model/instance';
+import { Instance, InstanceState } from '../model/instance';
 import { CommonModule } from '@angular/common';
 import { Constants } from '../constants/constants';
 
@@ -39,7 +39,6 @@ export class InstanceComponent implements OnInit {
     this.registerIcons()
   }
   ngOnInit(): void {
-    this.vscode.postMessage('Instance component started')
   }
 
   runTomcat(event: Event) {
@@ -58,7 +57,6 @@ export class InstanceComponent implements OnInit {
   }
 
   onSave = (instance: Instance) => {
-    this.vscode.postMessage('save event happened')
     this.vscode?.postMessage({ action: Constants.EVENT_SAVE, instance: this.instance })
   }
 
@@ -75,5 +73,18 @@ export class InstanceComponent implements OnInit {
       're-run',
       this.domSanitizer.bypassSecurityTrustResourceUrl("assets/re-run.svg")
     );
+  }
+
+  isRunning(): boolean {
+    return this.instance.state == InstanceState.RUNNING
+  }
+  isProcessing(): boolean {
+    return this.instance.state === InstanceState.PROCESSING
+  }
+  isDebugging(): boolean {
+    return this.instance.state == InstanceState.DEBUGGING
+  }
+  isIdle(): boolean {
+    return this.instance.state == InstanceState.IDLE
   }
 }

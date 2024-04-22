@@ -11,7 +11,7 @@ export interface TomcatConfig {
 
 
 export class Instance implements TomcatConfig {
-    instanceId!: string;
+    instanceId: string = '';
     tomcatHome!: string;
     instanceName!: string;
     adminPort!: string;
@@ -19,11 +19,10 @@ export class Instance implements TomcatConfig {
     workingDir!: string;
     contextPath!: string;
     projectName!: string;
-    processing: boolean = false;
-    running: boolean = false;
+    state: InstanceState = InstanceState.IDLE
     error: boolean = false
     errorMsg?: string
-    public static from(tomcatConfig: TomcatConfig, processing?: boolean, running?: boolean, error?: boolean, errorMsg?: string): Instance {
+    public static from(tomcatConfig: TomcatConfig, state?: InstanceState, error?: Error): Instance {
         const instance: Instance = new Instance();
         instance.adminPort = tomcatConfig.adminPort
         instance.contextPath = tomcatConfig.contextPath
@@ -32,16 +31,34 @@ export class Instance implements TomcatConfig {
         instance.serverPort = tomcatConfig.serverPort
         instance.tomcatHome = tomcatConfig.tomcatHome
         instance.workingDir = tomcatConfig.workingDir
-        if (processing)
-            instance.processing = processing
-        if (running)
-            instance.running = running
-        if (error)
-            instance.error = error
-        if (errorMsg)
-            instance.errorMsg = errorMsg
+        instance.instanceId = tomcatConfig.instanceId
+        if (state != undefined)
+            instance.state = state
+        if (error) {
+            instance.error = true
+            instance.errorMsg = error.message
+        }
+        // console.log(instance)
         return instance
     }
+}
+
+export enum InstanceState {
+    PROCESSING,
+    RUNNING,
+    DEBUGGING,
+    IDLE
+}
+
+export class Error {
+    private _message!: string;
+    private constructor(_message: string) {
+        this._message = _message
+    }
+    public get message(): string {
+        return this._message
+    }
+    public static message = (message: string) => new Error(message)
 }
 
 

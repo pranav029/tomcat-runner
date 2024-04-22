@@ -7,11 +7,17 @@ export class Instance {
     adminPort: string = ''
     contextPath: string = '/'
     projectName: string = ''
-    processing: boolean = false
-    running: boolean = false
+    state:InstanceState = InstanceState.IDLE
     isSaved: boolean = false
 
     constructor() {
         this.instanceId = uuid()
     }
+}
+
+export enum InstanceState {
+    PROCESSING,
+    RUNNING,
+    DEBUGGING,
+    IDLE
 }

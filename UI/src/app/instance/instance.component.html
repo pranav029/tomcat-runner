@@ -5,19 +5,19 @@
                 {{instance.instanceName}}
             </mat-panel-title>
             <mat-panel-description>
-                <button *ngIf="!instance.processing && !instance.running && instance.isSaved" mat-icon-button
-                    color="accent" aria-label="run" (click)="runTomcat($event)">
+                <button *ngIf="isIdle() && instance.isSaved" mat-icon-button color="accent" aria-label="run"
+                    (click)="runTomcat($event)">
                     <mat-icon svgIcon="run"></mat-icon>
                 </button>
-                <button *ngIf="!instance.processing && instance.running" mat-icon-button color="accent"
-                    aria-label="re-run" (click)="runTomcat($event)">
+                <button *ngIf="isRunning()" mat-icon-button color="accent" aria-label="re-run"
+                    (click)="runTomcat($event)">
                     <mat-icon svgIcon="re-run"></mat-icon>
                 </button>
-                <button *ngIf="!instance.processing && instance.running" mat-icon-button color="warn" aria-label="stop"
+                <button *ngIf="isRunning() || isDebugging()" mat-icon-button color="warn" aria-label="stop"
                     (click)="stopTomcat($event)">
                     <mat-icon svgIcon="stop"></mat-icon>
                 </button>
-                <mat-spinner *ngIf="instance.processing" [diameter]="20" color="accent"></mat-spinner>
+                <mat-spinner *ngIf="isProcessing()" [diameter]="20" color="accent"></mat-spinner>
             </mat-panel-description>
         </mat-expansion-panel-header>
         <button mat-raised-button color="warn" style="width: fit-content;" (click)="remove(index)">Delete</button>

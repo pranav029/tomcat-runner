@@ -7,4 +7,7 @@ export namespace Constants {
     export const UPDATE_INSTANCE = 'update-instance'
     export const PROJECT_LOADED = 'project-loaded'
     export const PROJECT_ERROR = 'project-error'
+    export const UI_INIT = 'ui-init'
+    export const UI_STATE_UPDATE = 'ui-state-update'
+    
 }

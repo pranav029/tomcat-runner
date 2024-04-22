@@ -3,7 +3,7 @@ import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } 
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { Instance } from '../model/instance';
+import { Instance, InstanceState } from '../model/instance';
 import { TomcatRunnerValidators } from './form.validators';
 declare function acquireVsCodeApi(): any;
 @Component({
@@ -39,7 +39,7 @@ export class FormComponent implements OnInit {
   private initForm() {
     this.instanceForm = this.formBuilder.group({
       tomcatHome: [this.instance.tomcatHome, Validators.required],
-      instanceName: [this.instance.instanceName, Validators.compose([Validators.required, TomcatRunnerValidators.validName(this.isInvalidName,this.instance)])],
+      instanceName: [this.instance.instanceName, Validators.compose([Validators.required, TomcatRunnerValidators.validName(this.isInvalidName, this.instance)])],
       serverPort: [this.instance.serverPort, Validators.compose([Validators.required, TomcatRunnerValidators.validPort])],
       adminPort: [this.instance.adminPort, Validators.compose([Validators.required, TomcatRunnerValidators.validPort])],
       contextPath: [this.instance.contextPath, Validators.required]
@@ -63,5 +63,9 @@ export class FormComponent implements OnInit {
     if (this.instance.adminPort != values.adminPort) return false
     if (this.instance.contextPath != values.contextPath.trim()) return false
     return true
+  }
+
+  isInstanceProcessing(): boolean {
+    return this.instance.state == InstanceState.PROCESSING
   }
 }

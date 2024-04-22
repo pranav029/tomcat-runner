@@ -5,6 +5,7 @@ import { Instance } from './model/instance';
 import { CommonModule } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Constants } from './constants/constants';
+import { v4 as uuid } from "uuid"
 
 
 
@@ -34,23 +35,16 @@ export class AppComponent implements OnInit, OnDestroy {
   }
   ngOnDestroy(): void {
     this.vscode.postMessage({ action: 'on-destroy' })
-    this.restoreState()
-    this.vscode.postMessage('UI destoryed')
   }
 
   ngOnInit(): void {
     this.initObserver()
-    this.restoreState()
-    this.vscode.postMessage('UI started')
-  }
-
-  restoreState() {
-    this.instances = this.vscode.getState()?.instances || []
-    this.loading = this.vscode.getState()?.loading || false
+    this.vscode.postMessage({ action: Constants.UI_INIT })
   }
 
   addInstance() {
     this.instances.push(new Instance())
+    this.vscode.postMessage({ action: 'test', data: this.instances })
     console.log('The length is: ' + this.instances.length)
     this.changeDetectorRef.detectChanges()
   }
@@ -67,57 +61,50 @@ export class AppComponent implements OnInit, OnDestroy {
         case Constants.UPDATE_INSTANCE:
           this.loading = false
           this.updateInstance(event.data.data)
-          this.updateState()
           this.changeDetectorRef.detectChanges()
           return
         case Constants.PROJECT_LOADED:
           this.loadData(event.data.data)
           this.loading = false
-          this.updateState()
           this.changeDetectorRef.detectChanges()
           return
         case Constants.PROJECT_ERROR:
           this.loading = false
-          this.updateState()
           this.changeDetectorRef.detectChanges()
           return
         case Constants.PROJECT_LOADING:
           this.loading = true
-          this.updateState()
           this.changeDetectorRef.detectChanges()
           return
+        case Constants.UI_STATE_UPDATE:
+          this.loadData(event.data.data.instances)
+          this.loading = false
+          this.changeDetectorRef.detectChanges()
       }
     })
   }
 
   private loadData(instances: Instance[]) {
-    const obj: Instance[] = { ...instances }
-    this.instances = obj.map(instance => {
-      instance
-      instance.isSaved = true
-      return instance
-    })
+    const obj: Instance[] = [...instances]
+    try {
+      this.instances = obj.map(instance => {
+        instance.isSaved = true
+        return instance
+      })
+    } catch (err) {
+      this.vscode.postMessage({ action: 'test', data: (err as Error).message })
+    }
   }
 
   updateInstance(instance: Instance) {
     this.instances?.forEach(inst => {
-      if (instance.instanceName === inst.instanceName) {
-        inst.running = instance.running
-        inst.processing = instance.processing
-        inst.isSaved = true
+      if (instance.instanceId == inst.instanceId) {
+        inst.state = instance.state
       }
     })
-    this.updateState()
     this.changeDetectorRef.detectChanges()
   }
 
-  private updateState() {
-    this.vscode.setState({
-      loading: this.loading,
-      message: this.msg,
-      instances: this.instances
-    })
-  }
 
   isInvalidName = (name: string): boolean => {
     return this.instances.find(inst => inst.instanceName === name) != undefined

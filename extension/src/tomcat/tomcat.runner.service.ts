@@ -1,7 +1,7 @@
 import { OutputChannel } from "vscode";
 import * as vscode from 'vscode';
 import { TomcatRunnerUtils } from "./tomcat.runner.utils";
-import { Instance, TomcatConfig } from "./tomcat.config";
+import { Instance, InstanceState, TomcatConfig } from "./tomcat.config";
 import { EventHandler } from "../ui/event.handler";
 import { ConfigManager } from "./config.manager";
 import { ProcessManager } from "./process.manager";
@@ -9,6 +9,7 @@ import { ViewMountListener } from "./view.mount.listener";
 import * as os from "os"
 import { Constants } from "./constants";
 import { ProjectState } from "../ui/resource";
+import { timeout } from "rxjs";
 
 
 
@@ -78,16 +79,20 @@ export class TomcatRunnerService {
         this.updateState({
             instances: this.projectState.instances?.map(inst => {
                 if (inst.instanceId === instance.instanceId)
-                    return Instance.from(instance, true)
+                    return Instance.from(instance, InstanceState.PROCESSING)
                 return inst
             })
         })
-        this.eventHandler?.updateInstance(Instance.from(instance, true))
+        this.eventHandler?.updateInstance(Instance.from(instance, InstanceState.PROCESSING))
         this.configManager?.setupConfig(instance)
     }
 
-    private onConfigReady = (tomcatConfig: TomcatConfig) => {
-        this.runTomcat(tomcatConfig)
+    private onConfigReady = (success: boolean, tomcatConfig: TomcatConfig) => {
+        if (!success) {
+            this.eventHandler.updateInstance(Instance.from(tomcatConfig))
+            return
+        }
+        this.runTomcat(tomcatConfig, false)
     }
 
     private onProjectConfigReady = (error: boolean, message?: string) => {
@@ -96,26 +101,34 @@ export class TomcatRunnerService {
                 error: true,
                 errorMsg: message ? message : Constants.SOMETHING_WENT_WRONG
             })
-            this.eventHandler.updateUiState(this.projectState)
-            return
         }
-        this.updateState({
+        else this.updateState({
             instances: this.configManager?.getInstances()
                 .map(inst => Instance.from(inst)) || []
         })
         this.eventHandler.updateUiState(this.projectState)
+        console.log(this.projectState)
     }
 
     private onSave = (success: boolean, tomcatConfig: TomcatConfig) => {
         if (success) {
             this.updateState({
                 instances: this.projectState.instances?.map(inst => {
-                    if (tomcatConfig.instanceId === inst.instanceId)
+                    if (tomcatConfig.instanceId == inst.instanceId)
                         return Instance.from(tomcatConfig)
                     return inst
                 })
             })
+            const exists = this.projectState.instances?.find(inst => inst.instanceId == tomcatConfig.instanceId)
+            if (!exists)
+                this.updateState({
+                    instances: this.projectState.instances?.concat(Instance.from(tomcatConfig)) || []
+                })
+            this.eventHandler.updateUiState(this.projectState)
+            vscode.window.showInformationMessage('Save success')
+            return
         }
+        vscode.window.showErrorMessage('Save failure')
         this.eventHandler.updateInstance(Instance.from(tomcatConfig))
     }
 
@@ -125,24 +138,23 @@ export class TomcatRunnerService {
 
     private stopInstance = (tomcatConfig: TomcatConfig) => {
         const stopCommand = TomcatRunnerUtils.getStopCommand(tomcatConfig)
-        this.eventHandler?.updateInstance(Instance.from(tomcatConfig, true))
+        this.eventHandler?.updateInstance(Instance.from(tomcatConfig, InstanceState.PROCESSING))
         this.processManager?.kill(tomcatConfig.instanceName, stopCommand, () => {
             this.eventHandler?.updateInstance(Instance.from(tomcatConfig))
         })
     }
 
 
-    private runTomcat(tomcatConfig: TomcatConfig) {
-        const startCommand = TomcatRunnerUtils.getStartCommand(tomcatConfig, true)
+    private runTomcat(tomcatConfig: TomcatConfig, debug: boolean) {
+        const startCommand = TomcatRunnerUtils.getStartCommand(tomcatConfig, debug)
         const stopCommand = TomcatRunnerUtils.getStopCommand(tomcatConfig)
         this.processManager?.stopServer(stopCommand, () => {
             const process = this.processManager?.execute(tomcatConfig.instanceName, startCommand)
             this.logger = vscode.window.createOutputChannel(tomcatConfig.instanceName)
             this.logger.show()
-            this.eventHandler?.updateInstance(Instance.from(tomcatConfig, false, true))
-            let debug = true
+            this.eventHandler?.updateInstance(Instance.from(tomcatConfig, InstanceState.RUNNING))
             process?.on('spawn', () => {
-                this.eventHandler?.updateInstance(Instance.from(tomcatConfig, false, true))
+                this.eventHandler?.updateInstance(Instance.from(tomcatConfig, InstanceState.RUNNING))
             })
             process?.stdout?.on('data', (data) => {
                 if (debug) {
@@ -155,6 +167,7 @@ export class TomcatRunnerService {
                         port: '8090'
                     })
                     debug = false
+                    vscode.debug.stopDebugging()
                 }
                 this.logger.appendLine(data.toString())
             })
@@ -172,7 +185,6 @@ export class TomcatRunnerService {
 
     private initObservers() {
         this.eventHandler?.observe(event => {
-            console.log(event)
             switch (event.action) {
                 case Constants.EVENT_RUN:
                     console.log('Run event')
@@ -184,17 +196,20 @@ export class TomcatRunnerService {
                     return
                 case Constants.EVENT_SAVE:
                     event.instance.projectName = this.workspaceDir?.name
-                    this.eventHandler?.updateInstance(Instance.from(event.instance, true))
-                    this.configManager?.save(event.instance)
+                    this.eventHandler?.updateInstance(Instance.from(event.instance, InstanceState.PROCESSING))
+                    setTimeout(() => {
+                        this.configManager?.save(event.instance)
+                    }, 5000)
                     return
                 case Constants.EVENT_DELETE:
                     this.configManager?.delete(event.instance)
                     return
-                case 'ui-init':
+                case Constants.UI_INIT:
+                    this.eventHandler.loadingProject()
                     this.eventHandler.updateUiState(this.projectState)
                     return
                 case 'test':
-                    console.log(event.instance)
+                    console.log(event)
                     return
             }
         })
@@ -206,6 +221,7 @@ export class TomcatRunnerService {
     }
 
     private updateState(newState: ProjectState) {
+        if (newState.loading) this.eventHandler.loadingProject()
         if (newState.projectName)
             this.projectState.projectName = newState.projectName
         if (newState.projectType)

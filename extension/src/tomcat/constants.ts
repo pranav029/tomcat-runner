@@ -8,4 +8,5 @@ export namespace Constants {
     export const EVENT_STOP = 'event-stop'
     export const EVENT_SAVE = 'event-save'
     export const EVENT_DELETE = 'event-delete'
+    export const UI_INIT = 'ui-init'
 }
