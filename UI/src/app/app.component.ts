@@ -6,6 +6,7 @@ import { CommonModule } from '@angular/common';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Constants } from './constants/constants';
 import { v4 as uuid } from "uuid"
+import { MatExpansionModule } from '@angular/material/expansion';
 
 
 
@@ -17,7 +18,8 @@ declare function acquireVsCodeApi(): any;
     RouterOutlet,
     InstanceComponent,
     CommonModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatExpansionModule
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'

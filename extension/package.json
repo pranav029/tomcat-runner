@@ -17,8 +17,8 @@
         {
           "id": "hello-webprovider",
           "name": "Hello Provider",
-          "icon": "$(clear-all)",
-          "title": "Hello Provider"
+          "icon": "src/assets/tomcat.svg",
+          "title": "Tomcat Runner"
         }
       ]
     },

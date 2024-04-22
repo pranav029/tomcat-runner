@@ -73,6 +73,14 @@ export class InstanceComponent implements OnInit {
       're-run',
       this.domSanitizer.bypassSecurityTrustResourceUrl("assets/re-run.svg")
     );
+    this.matIconRegistry.addSvgIcon(
+      'delete',
+      this.domSanitizer.bypassSecurityTrustResourceUrl("assets/delete.svg")
+    );
+    this.matIconRegistry.addSvgIcon(
+      'debug',
+      this.domSanitizer.bypassSecurityTrustResourceUrl("assets/debug.svg")
+    );
   }
 
   isRunning(): boolean {
