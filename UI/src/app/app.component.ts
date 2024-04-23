@@ -92,14 +92,15 @@ export class AppComponent implements OnInit, OnDestroy {
           this.loadData(event.data.data.instances)
           this.loading = false
           this.changeDetectorRef.detectChanges()
+          return
       }
     })
   }
 
   private loadData(instances: Instance[]) {
-    const obj: Instance[] = [...instances]
+    this.vscode.postMessage({ action: 'test', data: 'instances how ???' })
     try {
-      this.instances = obj.map(instance => {
+      this.instances = instances.map(instance => {
         instance.isSaved = true
         return instance
       })
@@ -109,9 +110,21 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   updateInstance(instance: Instance) {
+    this.vscode.postMessage({
+      action: 'test', data: {
+        msg: 'before',
+        data: this.instances
+      }
+    })
     this.instances?.forEach(inst => {
       if (instance.instanceId == inst.instanceId) {
         inst.state = instance.state
+      }
+    })
+    this.vscode.postMessage({
+      action: 'test', data: {
+        msg: 'after',
+        data: this.instances
       }
     })
     this.changeDetectorRef.detectChanges()
@@ -121,8 +134,8 @@ export class AppComponent implements OnInit, OnDestroy {
   isInvalidName = (name: string): boolean => {
     return this.instances.find(inst => inst.instanceName === name) != undefined
   }
-  
-  private registerIcon = ()=>{
+
+  private registerIcon = () => {
     this.matIconRegistry.addSvgIcon(
       'add',
       this.domSanitizer.bypassSecurityTrustResourceUrl("assets/add.svg")

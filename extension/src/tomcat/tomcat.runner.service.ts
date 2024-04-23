@@ -122,10 +122,8 @@ export class TomcatRunnerService {
             })
             const exists = this.projectState.instances?.find(inst => inst.instanceId == tomcatConfig.instanceId)
             if (!exists)
-                this.updateState({
-                    instances: this.projectState.instances?.concat(Instance.from(tomcatConfig)) || []
-                })
-            this.eventHandler.updateUiState(this.projectState)
+                this.projectState.instances?.push(Instance.from(tomcatConfig))
+            this.eventHandler.updateInstance(Instance.from(tomcatConfig))
             vscode.window.showInformationMessage('Save success')
             return
         }
@@ -216,9 +214,7 @@ export class TomcatRunnerService {
                 case Constants.EVENT_SAVE:
                     event.instance.projectName = this.workspaceDir?.name
                     this.eventHandler?.updateInstance(Instance.from(event.instance, InstanceState.PROCESSING))
-                    setTimeout(() => {
-                        this.configManager?.save(event.instance)
-                    }, 5000)
+                    this.configManager?.save(event.instance)
                     return
                 case Constants.EVENT_DELETE:
                     this.configManager?.delete(event.instance)
