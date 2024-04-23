@@ -7,6 +7,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Constants } from './constants/constants';
 import { v4 as uuid } from "uuid"
 import { MatExpansionModule } from '@angular/material/expansion';
+import { MatIconModule, MatIconRegistry } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { DomSanitizer } from '@angular/platform-browser';
 
 
 
@@ -19,7 +22,9 @@ declare function acquireVsCodeApi(): any;
     InstanceComponent,
     CommonModule,
     MatProgressSpinnerModule,
-    MatExpansionModule
+    MatExpansionModule,
+    MatIconModule,
+    MatButtonModule
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
@@ -32,8 +37,13 @@ export class AppComponent implements OnInit, OnDestroy {
   message: string = 'message'
   loading: boolean = false
 
-  constructor(private changeDetectorRef: ChangeDetectorRef) {
+  constructor(
+    private changeDetectorRef: ChangeDetectorRef,
+    private matIconRegistry: MatIconRegistry,
+    private domSanitizer: DomSanitizer
+  ) {
     this.vscode = acquireVsCodeApi()
+    this.registerIcon()
   }
   ngOnDestroy(): void {
     this.vscode.postMessage({ action: 'on-destroy' })
@@ -110,6 +120,13 @@ export class AppComponent implements OnInit, OnDestroy {
 
   isInvalidName = (name: string): boolean => {
     return this.instances.find(inst => inst.instanceName === name) != undefined
+  }
+  
+  private registerIcon = ()=>{
+    this.matIconRegistry.addSvgIcon(
+      'add',
+      this.domSanitizer.bypassSecurityTrustResourceUrl("assets/add.svg")
+    );
   }
 }
 

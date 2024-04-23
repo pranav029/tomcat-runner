@@ -9,5 +9,6 @@ export namespace Constants {
     export const PROJECT_ERROR = 'project-error'
     export const UI_INIT = 'ui-init'
     export const UI_STATE_UPDATE = 'ui-state-update'
-    
+    export const EVENT_DEBUG = 'event-debug'
+
 }

@@ -56,6 +56,14 @@ export class InstanceComponent implements OnInit {
     })
   }
 
+  debugTomcat(event: Event) {
+    event.stopPropagation()
+    this.vscode?.postMessage({
+      action: Constants.EVENT_DEBUG,
+      instance: this.instance
+    })
+  }
+
   onSave = (instance: Instance) => {
     this.vscode?.postMessage({ action: Constants.EVENT_SAVE, instance: this.instance })
   }

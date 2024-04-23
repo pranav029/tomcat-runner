@@ -15,7 +15,7 @@ type ProjectConfig = {
 export class ConfigManager {
     private _projectConfig?: ProjectConfig
     constructor(
-        private onConfigReady: (_: boolean, __: TomcatConfig) => void,
+        private onConfigReady: (_: boolean, __: { [key: string]: any }) => void,
         private onProjectConfigReady: (_: boolean, __?: string) => void,
         private onSave: (__: boolean, _: TomcatConfig) => void,
         private onDelete: (_: boolean, __: TomcatConfig) => void,
@@ -24,7 +24,9 @@ export class ConfigManager {
         this.readConfig()
     }
 
-    setupConfig(tomcatConfig: TomcatConfig) {
+
+    setupConfig(config: { [key: string]: any }) {
+        const tomcatConfig: TomcatConfig = config.tomcatConfig
         console.log(tomcatConfig.workingDir)
         Promise.all([
             TomcatRunnerUtils.copyDir(`${tomcatConfig.tomcatHome}/conf`, `${TomcatRunnerUtils.getDestDir(tomcatConfig)}/conf`),
@@ -34,14 +36,16 @@ export class ConfigManager {
             const [copySuccess, compileSuccess, generationSuccess] = res
             if (!copySuccess || !compileSuccess || !generationSuccess) {
                 vscode.window.showErrorMessage("Some error occured")
-                this.onConfigReady(false, tomcatConfig)
+                this.onConfigReady(false, config)
                 return
             }
-            this.editConfigs(tomcatConfig)
+            this.editConfigs(config)
         })
     }
 
-    private editConfigs(tomcatConfig: TomcatConfig) {
+    private editConfigs(config: { [key: string]: any }) {
+        const tomcatConfig: TomcatConfig = config.tomcatConfig
+        console.log(config)
         Promise.all([
             TomcatRunnerUtils.editConfig(tomcatConfig),
             this.generateCatalinaConfig(tomcatConfig)
@@ -49,10 +53,10 @@ export class ConfigManager {
             const [confEditSuccess, contextWriteSuccess] = res
             if (!confEditSuccess || !contextWriteSuccess) {
                 vscode.window.showErrorMessage("Some error occured")
-                this.onConfigReady(false, tomcatConfig)
+                this.onConfigReady(false, config)
                 return
             }
-            this.onConfigReady(true, tomcatConfig)
+            this.onConfigReady(true, config)
         })
     }
 

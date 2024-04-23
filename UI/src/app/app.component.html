@@ -1,9 +1,10 @@
 <mat-spinner *ngIf="loading" [diameter]="20" color="accent"></mat-spinner>
-<h3 *ngIf="!loading">{{msg}}</h3>
-<h3 *ngIf="!loading">{{message}}</h3>
-<button *ngIf="!error && !loading" mat-raised-button color="primary" style="width: fit-content;"
-    (click)="addInstance()">Add
-    Instance</button>
+<div style="display: flex;flex-direction: row;justify-content: end;width: 100%;">
+    <button *ngIf="!error && !loading" mat-icon-button color="accent" style="width: fit-content;"
+        (click)="addInstance()">
+        <mat-icon svgIcon="add"></mat-icon>
+    </button>
+</div>
 <mat-accordion>
     <app-instance *ngFor="let instance of instances;let idx = index" [vscode]="vscode" [remove]="remove"
         [instance]="instance" [index]="idx" [isInValidName]="isInvalidName"></app-instance>

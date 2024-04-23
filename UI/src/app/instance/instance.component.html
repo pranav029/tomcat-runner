@@ -9,7 +9,7 @@
                 <mat-icon svgIcon="run"></mat-icon>
             </button>
             <button *ngIf="isIdle() && instance.isSaved" mat-icon-button color="accent" aria-label="debug"
-                (click)="runTomcat($event)">
+                (click)="debugTomcat($event)">
                 <mat-icon svgIcon="debug"></mat-icon>
             </button>
             <button *ngIf="isRunning()" mat-icon-button color="accent" aria-label="re-run" (click)="runTomcat($event)">
@@ -22,8 +22,10 @@
             <mat-spinner *ngIf="isProcessing()" [diameter]="20" color="accent"></mat-spinner>
         </mat-panel-description>
     </mat-expansion-panel-header>
+  <div style="display: flex;flex-direction: row;justify-content: end;width: 100%;">
     <button mat-icon-button color="warn" style="width: fit-content;" (click)="remove(index)" aria-label="delete">
         <mat-icon svgIcon="delete"></mat-icon>
     </button>
+  </div>
     <app-form [save]="onSave" [instance]="instance" [isInvalidName]="isInValidName" [vscode]="vscode"></app-form>
 </mat-expansion-panel>

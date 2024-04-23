@@ -72,7 +72,8 @@ export class TomcatRunnerService {
     }
 
 
-    private runInstance(instance: Instance) {
+    private runInstance(config: { [key: string]: any }) {
+        const instance: Instance = config.tomcatConfig
         if (!this.workspaceDir) return
         instance.projectName = this.workspaceDir.name
         instance.workingDir = this.workspaceDir.uri.path.slice(1)
@@ -84,15 +85,15 @@ export class TomcatRunnerService {
             })
         })
         this.eventHandler?.updateInstance(Instance.from(instance, InstanceState.PROCESSING))
-        this.configManager?.setupConfig(instance)
+        this.configManager?.setupConfig(config)
     }
 
-    private onConfigReady = (success: boolean, tomcatConfig: TomcatConfig) => {
+    private onConfigReady = (success: boolean, config: { [key: string]: any }) => {
         if (!success) {
-            this.eventHandler.updateInstance(Instance.from(tomcatConfig))
+            this.eventHandler.updateInstance(Instance.from(config.tomcatConfig))
             return
         }
-        this.runTomcat(tomcatConfig, false)
+        this.runTomcat(config.tomcatConfig, config.debug)
     }
 
     private onProjectConfigReady = (error: boolean, message?: string) => {
@@ -114,7 +115,7 @@ export class TomcatRunnerService {
         if (success) {
             this.updateState({
                 instances: this.projectState.instances?.map(inst => {
-                    if (tomcatConfig.instanceId == inst.instanceId)
+                    if (tomcatConfig.instanceId === inst.instanceId)
                         return Instance.from(tomcatConfig)
                     return inst
                 })
@@ -148,16 +149,25 @@ export class TomcatRunnerService {
     private runTomcat(tomcatConfig: TomcatConfig, debug: boolean) {
         const startCommand = TomcatRunnerUtils.getStartCommand(tomcatConfig, debug)
         const stopCommand = TomcatRunnerUtils.getStopCommand(tomcatConfig)
+        let startDebug = debug
         this.processManager?.stopServer(stopCommand, () => {
             const process = this.processManager?.execute(tomcatConfig.instanceName, startCommand)
-            this.logger = vscode.window.createOutputChannel(tomcatConfig.instanceName)
-            this.logger.show()
-            this.eventHandler?.updateInstance(Instance.from(tomcatConfig, InstanceState.RUNNING))
+            const logger = vscode.window.createOutputChannel(tomcatConfig.instanceName)
+            logger.show()
+            this.updateState({
+                instances: this.projectState.instances?.map(inst => {
+                    if (inst.instanceId === tomcatConfig.instanceId)
+                        return Instance.from(tomcatConfig, debug ? InstanceState.DEBUGGING : InstanceState.RUNNING)
+                    return inst
+                })
+            })
+            this.eventHandler?.updateInstance(Instance.from(tomcatConfig, debug ? InstanceState.DEBUGGING : InstanceState.RUNNING))
             process?.on('spawn', () => {
-                this.eventHandler?.updateInstance(Instance.from(tomcatConfig, InstanceState.RUNNING))
+                // this.eventHandler?.updateInstance(Instance.from(tomcatConfig, InstanceState.RUNNING))
             })
             process?.stdout?.on('data', (data) => {
-                if (debug) {
+                if (startDebug) {
+                    vscode.debug.stopDebugging()
                     vscode.debug.startDebugging(this.workspaceDir, {
                         type: 'java',
                         name: 'Debug (Attach)',
@@ -166,18 +176,24 @@ export class TomcatRunnerService {
                         hostName: 'localhost',
                         port: '8090'
                     })
-                    debug = false
-                    vscode.debug.stopDebugging()
+                    startDebug = false
                 }
-                this.logger.appendLine(data.toString())
+                logger.appendLine(data.toString())
             })
             process?.stderr?.on('data', (data) => {
-                this.logger.appendLine(data.toString())
+                logger.appendLine(data.toString())
                 if (TomcatRunnerUtils.isServerUp(data))
-                    this.logger.appendLine(TomcatRunnerUtils.getServerLink(tomcatConfig))
+                    logger.appendLine(TomcatRunnerUtils.getServerLink(tomcatConfig))
             })
             process?.on('close', (data) => {
-                this.logger.appendLine(`Process exited with code ${data}`)
+                logger.appendLine(`Process exited with code ${data}`)
+                this.updateState({
+                    instances: this.projectState.instances?.map(inst => {
+                        if (inst.instanceId === tomcatConfig.instanceId)
+                            return Instance.from(tomcatConfig)
+                        return inst
+                    })
+                })
                 this.eventHandler?.updateInstance(Instance.from(tomcatConfig))
             })
         })
@@ -188,7 +204,10 @@ export class TomcatRunnerService {
             switch (event.action) {
                 case Constants.EVENT_RUN:
                     console.log('Run event')
-                    this.runInstance(event.instance)
+                    this.runInstance({
+                        debug: false,
+                        tomcatConfig: event.instance
+                    })
                     return
                 case Constants.EVENT_STOP:
                     console.log('Stop event')
@@ -207,6 +226,13 @@ export class TomcatRunnerService {
                 case Constants.UI_INIT:
                     this.eventHandler.loadingProject()
                     this.eventHandler.updateUiState(this.projectState)
+                    return
+                case Constants.DEBUG:
+                    console.log('Debug event')
+                    this.runInstance({
+                        debug: true,
+                        tomcatConfig: event.instance
+                    })
                     return
                 case 'test':
                     console.log(event)
