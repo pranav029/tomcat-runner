@@ -21,7 +21,7 @@ export class ConfigManager {
         private onDelete: (_: boolean, __: TomcatConfig) => void,
         private workspaceDir: string
     ) {
-        this.readConfig()
+        this.readConfig(true)
     }
 
 
@@ -158,7 +158,7 @@ export class ConfigManager {
         this.writeConfig((err) => {
             if (err)
                 console.log(err.message)
-            this.readConfig()
+            this.readConfig(false)
             this.onSave(err == null, tomcatConfig)
         })
     }
@@ -174,17 +174,17 @@ export class ConfigManager {
         }
     }
 
-    private readConfig() {
+    private readConfig(isProjectConfig: boolean) {
         const workingFolder = this.workspaceDir.split('/').slice(-1)[0]
         if (TomcatRunnerUtils.projectConfigExists(workingFolder))
             fs.readFile(TomcatRunnerUtils.getConfigPath(workingFolder), (err, data) => {
                 if (err) {
-                    this.onProjectConfigReady(true, Constants.SOMETHING_WENT_WRONG)
+                    if (isProjectConfig) this.onProjectConfigReady(true, Constants.SOMETHING_WENT_WRONG)
                     return
                 }
                 console.log('project read success')
                 this._projectConfig = JSON.parse(data.toString())
-                this.onProjectConfigReady(false)
+                if (isProjectConfig) this.onProjectConfigReady(false)
             })
         else {
             this.onProjectConfigReady(true, Constants.NO_CONFIG_FOUND)
