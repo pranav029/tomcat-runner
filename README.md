@@ -124,19 +124,19 @@ If you encounter any issues or have feature requests, feel free to open an issue
 ![Screenshot 1](./images/Screenshot_2024-11-27_183022.png)
 
 ### Screenshot 2
-![Screenshot 2](./images/Screenshot 2024-11-27 183059.png)
+![Screenshot 2](./images/Screenshot_2024-11-27_183059.png)
 
 ### Screenshot 3
-![Screenshot 3](./images/Screenshot 2024-11-27 183219.png)
+![Screenshot 3](./images/Screenshot_2024-11-27_183219.png)
 
 ### Screenshot 4
-![Screenshot 4](./images/Screenshot 2024-11-27 183247.png)
+![Screenshot 4](./images/Screenshot_2024-11-27_183247.png)
 
 ### Screenshot 5
-![Screenshot 5](./images/Screenshot 2024-11-27 183329.png)
+![Screenshot 5](./images/Screenshot_2024-11-27_183329.png)
 
 ### Screenshot 6
-![Screenshot 6](./images/Screenshot 2024-11-27 183348.png)
+![Screenshot 6](./images/Screenshot_2024-11-27_183348.png)
 
 ### Screenshot 7
-![Screenshot 7](./images/Screenshot 2024-11-27 183511.png)
+![Screenshot 7](./images/Screenshot_2024-11-27_183511.png)
