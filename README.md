@@ -139,4 +139,4 @@ If you encounter any issues or have feature requests, feel free to open an issue
 ![Screenshot 6](./images/Screenshot 2024-11-27 183348.png)
 
 ### Screenshot 7
-![Screenshot 7](./images/Screenshot 2024-11-27 183511.png)
+![Screenshot 7](./images/Screenshot_2024-11-27_183511.png)
